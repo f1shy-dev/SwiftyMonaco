@@ -17,6 +17,7 @@ public struct SwiftyMonaco: ViewControllerRepresentable, MonacoViewControllerDel
     
     var text: Binding<String>
     private var syntax: SyntaxHighlight?
+    private var theme: String = "auto"
     
     public init(text: Binding<String>) {
         self.text = text
@@ -56,6 +57,10 @@ public struct SwiftyMonaco: ViewControllerRepresentable, MonacoViewControllerDel
     public func monacoView(getSyntax controller: MonacoViewController) -> SyntaxHighlight? {
         return syntax
     }
+    
+    public func monacoView(getTheme controller: MonacoViewController) -> String {
+        return theme
+    }
 }
 
 // MARK: - Modifiers
@@ -63,6 +68,12 @@ public extension SwiftyMonaco {
     func syntaxHighlight(_ syntax: SyntaxHighlight) -> Self {
         var m = self
         m.syntax = syntax
+        return m
+    }
+
+    func editorTheme(_ theme: String) -> Self {
+        var m = self
+        m.theme = theme
         return m
     }
 }

@@ -69,20 +69,29 @@ public class MonacoViewController: ViewController, WKUIDelegate, WKNavigationDel
     #endif
     
     private func detectTheme() -> String {
+        
         #if os(macOS)
-        if UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark" {
-            return "vs-dark"
+        if self.delegate?.monacoView(getTheme: self) == "auto" {
+            if UserDefaults.standard.string(forKey: "AppleInterfaceStyle") == "Dark" {
+                return "vs-dark"
+            } else {
+                return "vs"
+            }
         } else {
-            return "vs"
+            return "customTheme"
         }
         #else
-        switch traitCollection.userInterfaceStyle {
-            case .light, .unspecified:
-                return "vs"
-            case .dark:
-                return "vs-dark"
-            @unknown default:
-                return "vs"
+        if self.delegate?.monacoView(getTheme: self) == "auto" {
+            switch traitCollection.userInterfaceStyle {
+                case .light, .unspecified:
+                    return "vs"
+                case .dark:
+                    return "vs-dark"
+                @unknown default:
+                    return "vs"
+            }
+        } else {
+            return "customTheme"
         }
         #endif
     }
@@ -100,8 +109,17 @@ public class MonacoViewController: ViewController, WKUIDelegate, WKNavigationDel
             \(syntax!.configuration)
         })());
         """ : ""
-        let syntaxJS2 = syntax != nil ? ", language: 'mySpecialLanguage'" : ""
+
+        let themeJS = self.delegate?.monacoView(getTheme: self) != "auto" ? """
+        monaco.editor.defineTheme('customTheme', (function() {
+            \(self.delegate?.monacoView(getTheme: self))
+        })());
+        monaco.editor.setTheme('customTheme');
+        """ : ""
         
+        let syntaxJS2 = syntax != nil ? ", language: 'mySpecialLanguage'" : ""
+
+
         // Code itself
         let text = self.delegate?.monacoView(readText: self) ?? ""
         let b64 = text.data(using: .utf8)?.base64EncodedString()
@@ -109,8 +127,9 @@ public class MonacoViewController: ViewController, WKUIDelegate, WKNavigationDel
         """
         (function() {
         \(syntaxJS)
+        \(themeJS)
 
-        editor.create({value: atob('\(b64 ?? "")'), automaticLayout: true, theme: "\(detectTheme())"\(syntaxJS2)});
+        editor.create({value: atob('\(b64 ?? "")'), theme:"\(detectTheme())", automaticLayout: true\(syntaxJS2)});
         var meta = document.createElement('meta'); meta.setAttribute('name', 'viewport'); meta.setAttribute('content', 'width=device-width'); document.getElementsByTagName('head')[0].appendChild(meta);
         return true;
         })();
